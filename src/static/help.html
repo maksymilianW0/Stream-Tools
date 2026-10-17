@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stream Pad — instrukcja konfiguracji</title>
+<style>
+:root{--ink:#12141c;--panel:#1b1f2c;--pad:#252a3b;--line:#343b55;--text:#e8ebf5;--dim:#8b93b0;--on:#35e0c0;--live:#ff4560;--warn:#ffb547;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:var(--ink);color:var(--text);line-height:1.6;padding:24px 16px 64px}
+.wrap{max-width:760px;margin:0 auto}
+a{color:var(--on)}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+h1{font-size:1.7rem}
+.lead{color:var(--dim);margin-bottom:28px}
+nav{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:32px}
+nav ol{padding-left:20px;display:grid;gap:2px}
+h2{font-size:1.2rem;margin:36px 0 10px}
+p,ul,ol{margin-bottom:12px}
+ul,ol{padding-left:22px}
+li{margin-bottom:4px}
+code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88rem}
+code{background:var(--pad);padding:2px 6px;border-radius:5px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;margin-bottom:14px}
+pre code{background:none;padding:0}
+table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:.92rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600}
+td:first-child{white-space:nowrap}
+.note{border-left:3px solid var(--warn);background:var(--panel);padding:10px 14px;border-radius:0 10px 10px 0;margin-bottom:14px}
+.cur{color:var(--on)}
+.wide{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Stream Pad — konfiguracja</h1>
+  <a href="/">← wróć do pada</a>
+</header>
+<p class="lead">Panel przycisków do sterowania OBS Studio z przeglądarki, także z telefonu lub tabletu w tej samej sieci.</p>
+
+<nav>
+  <strong>Spis treści</strong>
+  <ol>
+    <li><a href="#wymagania">Wymagania</a></li>
+    <li><a href="#obs">Włączenie WebSocket w OBS</a></li>
+    <li><a href="#start">Uruchomienie serwera</a></li>
+    <li><a href="#zmienne">Zmienne konfiguracyjne</a></li>
+    <li><a href="#nagrania">Katalog nagrań</a></li>
+    <li><a href="#telefon">Używanie z telefonu</a></li>
+    <li><a href="#czat">Czat Twitch</a></li>
+    <li><a href="#problemy">Rozwiązywanie problemów</a></li>
+  </ol>
+</nav>
+
+<h2 id="wymagania">1. Wymagania</h2>
+<ul>
+  <li>OBS Studio w wersji 28 lub nowszej (serwer WebSocket jest w nim wbudowany).</li>
+  <li>Python 3.10+ z pakietami <code>fastapi</code> i <code>uvicorn</code>.</li>
+</ul>
+<pre><code>pip install fastapi uvicorn</code></pre>
+
+<h2 id="obs">2. Włączenie WebSocket w OBS</h2>
+<ol>
+  <li>W OBS otwórz <strong>Narzędzia → Ustawienia serwera WebSocket</strong>.</li>
+  <li>Zaznacz <strong>Włącz serwer WebSocket</strong>.</li>
+  <li>Zostaw port <code>4455</code> albo ustaw własny i wpisz go w zmiennej <code>OBS_PORT</code>.</li>
+  <li>Zaznacz <strong>Włącz uwierzytelnianie</strong> i ustaw hasło. Przy pierwszym połączeniu wpiszesz je w oknie pada, a przeglądarka je zapamięta.</li>
+  <li>Kliknij OK.</li>
+</ol>
+<p>Hasło wpisujesz tylko w oknie pada i nie trafia do żadnego pliku konfiguracyjnego.</p>
+
+<h2 id="start">3. Uruchomienie serwera</h2>
+<p>Pliki <code>index.html</code> i <code>help.html</code> muszą leżeć w katalogu wskazanym przez <code>STATIC_DIR</code>. Potem:</p>
+<pre><code>python server.py</code></pre>
+<p>W konsoli zobaczysz adres do wpisania w przeglądarce, np. <code>http://localhost:8080</code>. Strona sama wyszuka OBS w sieci lokalnej. Jeśli go nie znajdzie, wpisz adres ręcznie.</p>
+
+<h2 id="zmienne">4. Zmienne konfiguracyjne</h2>
+<p>Znajdują się na górze pliku <code>server.py</code>. Każdą można też nadpisać zmienną środowiskową o tej samej nazwie, bez edycji pliku:</p>
+<pre><code>RECORD_DIR=/mnt/nagrania python server.py</code></pre>
+<p>Kolumna „Aktualnie" pokazuje wartości, z którymi działa teraz serwer.</p>
+<div class="wide">
+<table>
+  <tr><th>Zmienna</th><th>Znaczenie</th><th>Aktualnie</th></tr>
+  <tr><td><code>STATIC_DIR</code></td><td>Katalog z plikami strony.</td><td class="cur">–</td></tr>
+  <tr><td><code>WEB_PORT</code></td><td>Port, na którym działa Stream Pad.</td><td class="cur" data-k="webPort">–</td></tr>
+  <tr><td><code>OBS_PORT</code></td><td>Port serwera WebSocket w OBS.</td><td class="cur" data-k="obsPort">–</td></tr>
+  <tr><td><code>RECORD_DIR</code></td><td>Katalog zapisu nagrań na komputerze z OBS. Pusty tekst oznacza, że ustawienie OBS nie jest zmieniane.</td><td class="cur" data-k="recordDir">–</td></tr>
+  <tr><td><code>RECORD_FILENAME_FORMAT</code></td><td>Schemat nazwy pliku w składni OBS. Pusty tekst oznacza brak zmiany.</td><td class="cur" data-k="recordFilenameFormat">–</td></tr>
+  <tr><td><code>OBS_ON_THIS_PC</code></td><td><code>1</code>, gdy serwer działa na tym samym komputerze co OBS. Wtedy brakujący katalog nagrań jest tworzony przy starcie.</td><td class="cur" data-k="obsOnThisPc">–</td></tr>
+  <tr><td><code>TWITCH_CHANNEL</code></td><td>Kanał otwierany domyślnie w czacie.</td><td class="cur" data-k="twitchChannel">–</td></tr>
+</table>
+</div>
+<p>Po zmianie wartości zrestartuj serwer i odśwież stronę.</p>
+
+<h2 id="nagrania">5. Katalog nagrań</h2>
+<p>Przy każdym starcie nagrywania pad najpierw wysyła do OBS katalog z <code>RECORD_DIR</code> i schemat nazwy z <code>RECORD_FILENAME_FORMAT</code>, a dopiero potem włącza nagrywanie. Dzięki temu nagrania zawsze trafiają tam, gdzie wskazuje konfiguracja, niezależnie od ustawień w OBS.</p>
+<ul>
+  <li>Ścieżka dotyczy komputera, na którym działa <strong>OBS</strong>, a nie telefonu ani przeglądarki.</li>
+  <li>Na Windowsie używaj zwykłych ukośników: <code>D:/Nagrania</code>.</li>
+  <li>Katalog zmienia się tylko przed startem. Trwającego nagrania nie da się przenieść.</li>
+  <li>Starsze wersje OBS nie mają polecenia zmiany katalogu. Pad próbuje wtedy ustawić go w profilu OBS, co działa dla trybu prostego i zaawansowanego.</li>
+  <li>Jeśli OBS odmówi zmiany, pad pokaże komunikat, ale nagranie i tak się włączy, żeby nic nie przepadło. Sprawdź wtedy, gdzie trafił plik.</li>
+</ul>
+<div class="note">Jeśli serwer działa na innym komputerze niż OBS, ustaw <code>OBS_ON_THIS_PC=0</code> i upewnij się, że katalog istnieje na komputerze z OBS.</div>
+
+<h2 id="telefon">6. Używanie z telefonu</h2>
+<ol>
+  <li>Telefon i komputer muszą być w tej samej sieci Wi-Fi.</li>
+  <li>Otwórz w telefonie adres „w sieci" z konsoli, np. <code>http://192.168.1.20:8080</code>.</li>
+  <li>Jeśli strona się nie ładuje, zezwól w zaporze na porty <code>WEB_PORT</code> (domyślnie 8080) i <code>OBS_PORT</code> (domyślnie 4455).</li>
+</ol>
+<p>Telefon łączy się z OBS bezpośrednio, więc OBS musi być osiągalny z sieci, a nie tylko z <code>localhost</code>.</p>
+
+<h2 id="czat">7. Czat Twitch</h2>
+<p>W prawym panelu wpisz nazwę kanału (samą nazwę z adresu <code>twitch.tv/nazwa</code>) i kliknij „Połącz". Czat działa tylko do odczytu i nie wymaga logowania. Możesz też ustawić kanał domyślny w <code>TWITCH_CHANNEL</code>. Urządzenie z otwartym padem potrzebuje dostępu do internetu.</p>
+
+<h2 id="problemy">8. Rozwiązywanie problemów</h2>
+<table>
+  <tr><th>Objaw</th><th>Co sprawdzić</th></tr>
+  <tr><td>„Nie znaleziono OBS"</td><td>Czy serwer WebSocket jest włączony i czy zapora przepuszcza port. Wpisz adres ręcznie, jeśli OBS jest w innej podsieci niż /24.</td></tr>
+  <tr><td>„Złe hasło"</td><td>Hasło musi być takie samo jak w ustawieniach WebSocket w OBS.</td></tr>
+  <tr><td>Nagrania w złym miejscu</td><td>Sprawdź <code>RECORD_DIR</code> i czy przed startem nie pojawił się komunikat o błędzie.</td></tr>
+  <tr><td>Brak urządzeń w sekcji Dźwięk</td><td>Pad pokazuje urządzenia globalne z Ustawienia → Dźwięk. Źródła dodane tylko do scen nie są wyświetlane.</td></tr>
+  <tr><td>Pusty czat</td><td>Kanał może być offline albo nikt nie pisze. Sprawdź pisownię nazwy kanału.</td></tr>
+</table>
+</div>
+
+<script>
+fetch("/api/config").then(r=>r.json()).then(c=>{
+  document.querySelectorAll("[data-k]").forEach(td=>{
+    const v=c[td.dataset.k];
+    td.textContent=(v===""||v==null)?"(puste)":(typeof v==="boolean"?(v?"1":"0"):v);
+  });
+}).catch(()=>{});
+</script>
+</body>
+</html>
