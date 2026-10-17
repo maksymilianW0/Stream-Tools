@@ -8,500 +8,103 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Stream Pad</title>
-<style>
-:root{
-  --ink:#12141c; --panel:#1b1f2c; --pad:#252a3b; --pad-hi:#303650; --line:#343b55;
-  --text:#e8ebf5; --dim:#8b93b0; --live:#ff4560; --on:#35e0c0; --warn:#ffb547;
-  --r:14px;
-  font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-}
-*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overscroll-behavior-y:none}
-@supports (height:100dvh){html,body{height:100dvh}}
-body{background:var(--ink);color:var(--text);display:flex;flex-direction:column;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-button:focus-visible,input:focus-visible{outline:2px solid var(--on);outline-offset:2px}
-
-header{display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
-header h1{font-size:1.05rem;font-weight:700;letter-spacing:.2px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--dim)}
-.dot.ok{background:var(--on);box-shadow:0 0 8px var(--on)}
-.helplink{color:var(--dim);font-size:.85rem;text-decoration:none;padding:8px 0}
-.helplink:hover{color:var(--text)}
-.stats{margin-left:auto;display:flex;gap:16px;color:var(--dim);font-size:.85rem;font-variant-numeric:tabular-nums}
-.stats b{color:var(--text);font-weight:600}
-
-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:16px;padding:16px}
-.col{display:flex;flex-direction:column;gap:16px;min-height:0;overflow-y:auto}
-section{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-section h2{font-size:.9rem;font-weight:600;color:var(--dim);margin-bottom:10px}
-
-.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.big{padding:18px 10px;border-radius:var(--r);background:var(--pad);border:1px solid var(--line);
-  font-weight:600;display:flex;flex-direction:column;gap:4px;align-items:center;transition:transform .08s,background .15s}
-.big small{color:var(--dim);font-weight:400;font-variant-numeric:tabular-nums}
-.big:active{transform:scale(.96)}
-.big.live{background:var(--live);border-color:var(--live)}
-.big.live small{color:#fff}
-.big.rec{background:#8f1f33;border-color:var(--live)}
-.big:disabled{opacity:.4;cursor:not-allowed}
-
-.scenes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.scene{min-height:84px;padding:12px;border-radius:var(--r);background:var(--pad);border:2px solid transparent;
-  font-weight:600;text-align:left;overflow-wrap:anywhere;transition:transform .08s,background .15s}
-@media (hover:hover){.scene:hover{background:var(--pad-hi)}}
-.scene:active{transform:scale(.96)}
-.scene.active{border-color:var(--on);background:#1e3a3a;box-shadow:inset 0 0 0 1px var(--on)}
-
-.audio{display:flex;flex-direction:column;gap:10px}
-.ch{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
-.mute{width:100px;min-height:48px;padding:10px 6px;border-radius:10px;background:var(--pad);border:1px solid var(--line);font-size:.85rem;font-weight:600}
-.mute.muted{background:#5c2432;border-color:var(--live);color:#ffd0d8}
-.ch .name{font-size:.8rem;color:var(--dim);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-input[type=range]{width:100%;height:36px;accent-color:var(--on);touch-action:pan-y}
-
-.chat{flex:1;min-height:0;display:flex;flex-direction:column}
-.chat-head{display:flex;gap:8px;margin-bottom:10px}
-input[type=text],input[type=password]{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
-  background:var(--ink);color:var(--text);font:inherit;font-size:16px;min-height:46px}
-.btn{min-height:46px;padding:10px 16px;border-radius:10px;background:var(--on);color:#06241e;font-weight:700}
-.btn.ghost{background:var(--pad);color:var(--text);font-weight:600}
-#chatlog{flex:1;min-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:.92rem;line-height:1.35}
-#chatlog .m b{margin-right:6px}
-#chatlog .sys{color:var(--dim);font-style:italic}
-
-#connect{position:fixed;inset:0;background:rgba(10,11,16,.92);display:flex;overflow-y:auto;padding:20px;z-index:10}
-#connect[hidden]{display:none}
-.card{margin:auto;width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
-.card h2{font-size:1.2rem;color:var(--text);margin:0}
-.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:36px;align-items:center}
-.chip{min-height:44px;padding:10px 16px;border-radius:999px;background:var(--pad);border:1px solid var(--line);font-size:.9rem}
-.chip.sel{border-color:var(--on);color:var(--on)}
-.msg{color:var(--dim);font-size:.88rem;min-height:1.2em}
-.msg.err{color:var(--live)}
-
-#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));max-width:90vw;text-align:center;transform:translateX(-50%);background:var(--pad-hi);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s}
-#toast.show{opacity:1}
-
-@media (max-width:820px){
-  html,body{height:auto;min-height:100dvh}
-  header{padding:10px 12px;gap:10px}
-  header h1{font-size:1rem}
-  .stats{gap:10px;font-size:.78rem}
-  .stats span:last-child{display:none}
-  main{grid-template-columns:1fr;padding:10px;gap:12px}
-  .col{overflow:visible;gap:12px}
-  section{padding:12px}
-  .controls{grid-template-columns:1fr 1fr;gap:10px}
-  #b-replay{grid-column:1/-1;flex-direction:row;justify-content:center;gap:10px;padding:14px 10px}
-  .scenes{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
-  .scene{min-height:76px}
-  .chat{flex:none}
-  #chatlog{flex:none;height:min(50dvh,420px);min-height:0}
-  .ch{grid-template-columns:100px 1fr}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+<link rel="stylesheet" href="/static/css/app.css">
 </head>
-<body>
+<body data-tab="pad">
 
 <header>
-  <span class="dot" id="dot"></span>
+  <span class="dot" id="dot" role="img" aria-label="Stan połączenia z OBS"></span>
   <h1>Stream Pad</h1>
+  <span class="pill live" id="p-live" hidden>live</span>
+  <span class="pill rec" id="p-rec" hidden>rec</span>
   <div class="stats">
     <span>CPU <b id="st-cpu">–</b></span>
     <span>FPS <b id="st-fps">–</b></span>
-    <span>Gubione klatki <b id="st-drop">–</b></span>
+    <span class="opt">Gubione klatki <b id="st-drop">–</b></span>
+    <span class="opt" id="st-disk-wrap">Dysk <b id="st-disk">–</b></span>
   </div>
+  <button class="iconbtn" id="b-settings" type="button">Ustawienia</button>
   <a class="helplink" href="/help" target="_blank" rel="noopener">Instrukcja</a>
 </header>
 
+<div id="banner" hidden role="status">
+  <span id="banner-msg"></span>
+  <button class="linkbtn" id="b-banner-server" type="button">Zmień serwer</button>
+</div>
+
 <main>
   <div class="col">
-    <section>
+    <section data-pane="pad">
       <div class="controls">
-        <button class="big" id="b-stream">Stream <small id="t-stream">wyłączony</small></button>
-        <button class="big" id="b-rec">Nagrywanie <small id="t-rec">wyłączone</small></button>
-        <button class="big" id="b-replay">Zapisz powtórkę <small>bufor powtórek</small></button>
+        <button class="big" id="b-stream" type="button"><span>Stream</span><small id="t-stream">wyłączony</small><small class="hint" id="h-stream"></small></button>
+        <button class="big" id="b-rec" type="button"><span>Nagrywanie</span><small id="t-rec">wyłączone</small><small class="hint" id="h-rec"></small></button>
+        <button class="big" id="b-replay" type="button"><span>Zapisz powtórkę</span><small>bufor powtórek</small></button>
       </div>
-    <div class="msg" id="rec-dir" style="margin-top:10px"></div>
+      <div class="msg" id="rec-dir" style="margin-top:10px"></div>
     </section>
-    <section>
+    <section data-pane="pad">
       <h2>Sceny</h2>
       <div class="scenes" id="scenes"></div>
     </section>
-    <section>
+    <section data-pane="audio">
       <h2>Dźwięk</h2>
       <div class="audio" id="audio"></div>
     </section>
   </div>
 
   <div class="col">
-    <section class="chat">
+    <section class="chat" data-pane="chat">
       <h2>Czat na żywo (Twitch)</h2>
       <div class="chat-head">
-        <input type="text" id="chan" placeholder="nazwa kanału" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <button class="btn ghost" id="chan-go">Połącz</button>
+        <input type="text" id="chan" placeholder="nazwa kanału" aria-label="Kanał Twitch" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button class="btn ghost" id="chan-go" type="button">Połącz</button>
       </div>
-      <div id="chatlog"></div>
-    </section>
-    <section>
-      <button class="btn ghost" id="b-reconf" style="width:100%">Zmień serwer OBS</button>
+      <div id="chatlog" aria-live="off"></div>
     </section>
   </div>
 </main>
 
-<div id="connect">
+<nav id="tabbar" aria-label="Widoki">
+  <button type="button" data-tab="pad" class="on" aria-selected="true">Pad</button>
+  <button type="button" data-tab="audio" aria-selected="false">Dźwięk</button>
+  <button type="button" data-tab="chat" aria-selected="false">Czat</button>
+</nav>
+
+<div id="connect" hidden>
   <div class="card">
     <h2>Połącz z OBS</h2>
     <div>
       <div class="msg" id="scan-msg">Szukam OBS w sieci…</div>
       <div class="chips" id="found"></div>
     </div>
-    <input type="text" id="host" placeholder="adres IP, np. 192.168.1.20" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url">
-    <input type="password" id="pass" placeholder="hasło OBS WebSocket (jeśli ustawione)" autocomplete="off">
+    <input type="text" id="host" placeholder="adres IP, np. 192.168.1.20" aria-label="Adres serwera OBS" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url">
+    <input type="password" id="pass" placeholder="hasło OBS WebSocket (jeśli ustawione)" aria-label="Hasło OBS WebSocket" autocomplete="off">
     <div class="msg" id="conn-msg"></div>
     <div style="display:flex;gap:8px">
-      <button class="btn" id="go" style="flex:1">Połącz</button>
-      <button class="btn ghost" id="rescan">Szukaj ponownie</button>
+      <button class="btn" id="go" type="button" style="flex:1">Połącz</button>
+      <button class="btn ghost" id="rescan" type="button">Szukaj ponownie</button>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<div class="overlay" id="settings" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="settings-title">Ustawienia</h2>
+      <a class="helplink" href="/help" target="_blank" rel="noopener" style="display:inline">Instrukcja</a>
+      <button class="btn ghost" id="settings-close" type="button">Zamknij</button>
+    </div>
+    <div class="sheet-body" id="settings-body"></div>
+    <div class="sheet-foot">
+      <span class="msg" id="settings-msg" role="status"></span>
+      <button class="btn ghost" id="settings-cancel" type="button">Anuluj</button>
+      <button class="btn" id="settings-save" type="button">Zapisz zmiany</button>
+    </div>
+  </div>
+</div>
 
-<script>
-"use strict";
-const $ = id => document.getElementById(id);
-const store = {
-  get(k){ try{ return localStorage.getItem(k) || ""; }catch{ return ""; } },
-  set(k,v){ try{ localStorage.setItem(k,v); }catch{} }
-};
-function toast(t){ const e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove("show"),2200); }
+<div id="toast" role="status" aria-live="polite"></div>
 
-/* ---------- SHA-256 (fallback: crypto.subtle is missing on http:// in LAN) ---------- */
-const K=[],H0=[];
-for(let c=2,n=0;n<64;c++){let p=true;for(let d=2;d*d<=c;d++)if(c%d===0){p=false;break}
-  if(p){ if(n<8)H0[n]=(Math.pow(c,.5)*2**32)|0; K[n++]=(Math.pow(c,1/3)*2**32)|0; }}
-const ror=(x,n)=>(x>>>n)|(x<<(32-n));
-function sha256Sync(msg){
-  const l=msg.length,n=((l+9+63)>>6)<<6,b=new Uint8Array(n);
-  b.set(msg);b[l]=0x80;const dv=new DataView(b.buffer);
-  dv.setUint32(n-8,Math.floor(l*8/2**32));dv.setUint32(n-4,(l*8)>>>0);
-  let h=H0.slice();const w=new Array(64);
-  for(let i=0;i<n;i+=64){
-    for(let t=0;t<16;t++)w[t]=dv.getUint32(i+4*t);
-    for(let t=16;t<64;t++){
-      const a=w[t-15],c=w[t-2];
-      w[t]=(w[t-16]+(ror(a,7)^ror(a,18)^(a>>>3))+w[t-7]+(ror(c,17)^ror(c,19)^(c>>>10)))|0;
-    }
-    let [a,b2,c,d,e,f,g,hh]=h;
-    for(let t=0;t<64;t++){
-      const t1=(hh+(ror(e,6)^ror(e,11)^ror(e,25))+((e&f)^(~e&g))+K[t]+w[t])|0;
-      const t2=((ror(a,2)^ror(a,13)^ror(a,22))+((a&b2)^(a&c)^(b2&c)))|0;
-      hh=g;g=f;f=e;e=(d+t1)|0;d=c;c=b2;b2=a;a=(t1+t2)|0;
-    }
-    h=[a,b2,c,d,e,f,g,hh].map((x,j)=>(h[j]+x)|0);
-  }
-  const out=new Uint8Array(32),ov=new DataView(out.buffer);
-  h.forEach((x,i)=>ov.setUint32(i*4,x));
-  return out;
-}
-async function sha256(str){
-  const data=new TextEncoder().encode(str);
-  if(window.crypto&&crypto.subtle) return new Uint8Array(await crypto.subtle.digest("SHA-256",data));
-  return sha256Sync(data);
-}
-const b64=u8=>btoa(String.fromCharCode(...u8));
-async function obsAuth(password,salt,challenge){
-  const secret=b64(await sha256(password+salt));
-  return b64(await sha256(secret+challenge));
-}
-
-/* ---------- OBS WebSocket v5 ---------- */
-class OBS{
-  constructor(){ this.ws=null; this.pending=new Map(); this.id=0; this.handlers={}; }
-  on(ev,fn){ this.handlers[ev]=fn; }
-  connect(host,password){
-    return new Promise((resolve,reject)=>{
-      let done=false;
-      const ws=this.ws=new WebSocket(`ws://${host}:${CFG.obsPort}`);
-      const fail=m=>{ if(!done){done=true;reject(new Error(m));} };
-      ws.onerror=()=>fail("Nie można połączyć z "+host+":"+CFG.obsPort);
-      ws.onclose=e=>{
-        for(const p of this.pending.values())p.reject(new Error("rozłączono"));
-        this.pending.clear();
-        if(!done){ fail(e.code===4009?"Złe hasło":"Połączenie zamknięte ("+e.code+")"); }
-        else this.handlers.close&&this.handlers.close();
-      };
-      ws.onmessage=async ev=>{
-        const m=JSON.parse(ev.data);
-        if(m.op===0){
-          const d={rpcVersion:1,eventSubscriptions:2047};
-          if(m.d.authentication){
-            if(!password){ fail("OBS wymaga hasła"); ws.close(); return; }
-            d.authentication=await obsAuth(password,m.d.authentication.salt,m.d.authentication.challenge);
-          }
-          ws.send(JSON.stringify({op:1,d}));
-        }else if(m.op===2){ done=true; resolve(); }
-        else if(m.op===5){ this.handlers[m.d.eventType]&&this.handlers[m.d.eventType](m.d.eventData||{}); }
-        else if(m.op===7){
-          const p=this.pending.get(m.d.requestId); if(!p)return;
-          this.pending.delete(m.d.requestId);
-          m.d.requestStatus.result?p.resolve(m.d.responseData||{}):p.reject(new Error(m.d.requestStatus.comment||"błąd"));
-        }
-      };
-    });
-  }
-  req(type,data){
-    return new Promise((resolve,reject)=>{
-      if(!this.ws||this.ws.readyState!==1)return reject(new Error("brak połączenia"));
-      const id=String(++this.id);
-      this.pending.set(id,{resolve,reject});
-      this.ws.send(JSON.stringify({op:6,d:{requestType:type,requestId:id,requestData:data}}));
-    });
-  }
-  close(){ if(this.ws){ this.ws.onclose=null; this.ws.close(); } }
-}
-const CFG={obsPort:4455,recordDir:"",recordFilenameFormat:"",twitchChannel:""};
-const obs=new OBS();
-let connected=false, wantConnected=false, timers=[], retry=null;
-
-/* ---------- UI state ---------- */
-const state={scene:"",scenes:[],streaming:false,recording:false,inputs:[]};
-
-function renderScenes(){
-  const box=$("scenes"); box.replaceChildren();
-  state.scenes.forEach(name=>{
-    const b=document.createElement("button");
-    b.className="scene"+(name===state.scene?" active":"");
-    b.textContent=name;
-    b.onclick=()=>obs.req("SetCurrentProgramScene",{sceneName:name}).catch(e=>toast(e.message));
-    box.append(b);
-  });
-}
-function renderOutputs(){
-  $("b-stream").classList.toggle("live",state.streaming);
-  $("t-stream").textContent=state.streaming?"NA ŻYWO":"wyłączony";
-  $("b-rec").classList.toggle("rec",state.recording);
-  $("t-rec").textContent=state.recording?"nagrywa":"wyłączone";
-}
-function renderAudio(){
-  const box=$("audio"); box.replaceChildren();
-  if(!state.inputs.length){ box.textContent="Brak skonfigurowanych urządzeń audio."; box.className="audio msg"; return; }
-  box.className="audio";
-  state.inputs.forEach(inp=>{
-    const row=document.createElement("div"); row.className="ch";
-    const mute=document.createElement("button");
-    mute.className="mute"+(inp.muted?" muted":""); mute.textContent=inp.muted?"Wyciszony":"Włączony";
-    mute.onclick=()=>obs.req("ToggleInputMute",{inputName:inp.name}).catch(e=>toast(e.message));
-    const right=document.createElement("div");
-    const nm=document.createElement("div"); nm.className="name"; nm.textContent=inp.name;
-    const rg=document.createElement("input"); rg.type="range"; rg.min=0; rg.max=100; rg.value=Math.round(Math.cbrt(inp.vol)*100);
-    rg.setAttribute("aria-label","Głośność: "+inp.name);
-    rg.oninput=()=>{ const v=Math.pow(rg.value/100,3); inp.vol=v; obs.req("SetInputVolume",{inputName:inp.name,inputVolumeMul:v}).catch(()=>{}); };
-    inp.slider=rg; inp.btn=mute;
-    right.append(nm,rg); row.append(mute,right); box.append(row);
-  });
-}
-
-async function loadAll(){
-  const sl=await obs.req("GetSceneList");
-  state.scene=sl.currentProgramSceneName;
-  state.scenes=sl.scenes.map(s=>s.sceneName).reverse();
-  renderScenes();
-  const [ss,rs]=await Promise.all([obs.req("GetStreamStatus"),obs.req("GetRecordStatus")]);
-  state.streaming=ss.outputActive; state.recording=rs.outputActive; renderOutputs();
-  const sp=await obs.req("GetSpecialInputs");
-  const names=[...new Set(Object.values(sp).filter(Boolean))];
-  state.inputs=[];
-  for(const name of names){
-    try{
-      const [m,v]=await Promise.all([obs.req("GetInputMute",{inputName:name}),obs.req("GetInputVolume",{inputName:name})]);
-      state.inputs.push({name,muted:m.inputMuted,vol:v.inputVolumeMul});
-    }catch{}
-  }
-  renderAudio();
-}
-
-async function poll(){
-  try{
-    const s=await obs.req("GetStats");
-    $("st-cpu").textContent=s.cpuUsage.toFixed(1)+"%";
-    $("st-fps").textContent=s.activeFps.toFixed(0);
-    $("st-drop").textContent=s.outputSkippedFrames+"/"+s.outputTotalFrames;
-    if(state.streaming){ const o=await obs.req("GetStreamStatus"); $("t-stream").textContent="NA ŻYWO "+o.outputTimecode.split(".")[0]; }
-    if(state.recording){ const o=await obs.req("GetRecordStatus"); $("t-rec").textContent="nagrywa "+o.outputTimecode.split(".")[0]; }
-  }catch{}
-}
-
-obs.on("CurrentProgramSceneChanged",d=>{ state.scene=d.sceneName; renderScenes(); });
-obs.on("SceneListChanged",()=>loadAll().catch(()=>{}));
-obs.on("StreamStateChanged",d=>{ state.streaming=d.outputActive; renderOutputs(); });
-obs.on("RecordStateChanged",d=>{ state.recording=d.outputActive; renderOutputs(); });
-obs.on("InputMuteStateChanged",d=>{ const i=state.inputs.find(x=>x.name===d.inputName); if(i){ i.muted=d.inputMuted; i.btn.className="mute"+(i.muted?" muted":""); i.btn.textContent=i.muted?"Wyciszony":"Włączony"; }});
-obs.on("InputVolumeChanged",d=>{ const i=state.inputs.find(x=>x.name===d.inputName); if(i&&document.activeElement!==i.slider){ i.vol=d.inputVolumeMul; i.slider.value=Math.round(Math.cbrt(i.vol)*100); }});
-obs.on("ReplayBufferSaved",()=>toast("Powtórka zapisana"));
-obs.on("close",()=>{
-  connected=false; timers.forEach(clearInterval); timers=[];
-  $("dot").classList.remove("ok");
-  $("connect").hidden=false; setConnMsg("Rozłączono. Próbuję ponownie…",true);
-  retry=setTimeout(()=>doConnect(true),3000);
-});
-
-$("b-stream").onclick=()=>{
-  // potwierdzenie chroni przed przypadkowym dotknięciem na ekranie dotykowym
-  if(!confirm(state.streaming?"Zakończyć stream?":"Rozpocząć stream?"))return;
-  obs.req("ToggleStream").catch(e=>toast(e.message));
-};
-async function applyRecordSettings(){
-  if(CFG.recordDir){
-    try{ await obs.req("SetRecordDirectory",{recordDirectory:CFG.recordDir}); }
-    catch{
-      // starsze OBS (bez SetRecordDirectory): ustaw w profilu tryb prosty i zaawansowany
-      try{
-        await obs.req("SetProfileParameter",{parameterCategory:"SimpleOutput",parameterName:"FilePath",parameterValue:CFG.recordDir});
-        await obs.req("SetProfileParameter",{parameterCategory:"AdvOut",parameterName:"RecFilePath",parameterValue:CFG.recordDir});
-      }catch(e){ toast("Nie udało się ustawić katalogu nagrań: "+e.message); }
-    }
-  }
-  if(CFG.recordFilenameFormat){
-    try{ await obs.req("SetProfileParameter",{parameterCategory:"Output",parameterName:"FilenameFormatting",parameterValue:CFG.recordFilenameFormat}); }
-    catch(e){ toast("Nie udało się ustawić nazwy pliku: "+e.message); }
-  }
-}
-$("b-rec").onclick=async()=>{
-  try{
-    if(!state.recording) await applyRecordSettings();
-    await obs.req("ToggleRecord");
-  }catch(e){ toast(e.message); }
-};
-$("b-replay").onclick=()=>obs.req("SaveReplayBuffer").catch(()=>toast("Włącz bufor powtórek w OBS"));
-
-/* ---------- connection dialog ---------- */
-function setConnMsg(t,err){ const e=$("conn-msg"); e.textContent=t; e.className="msg"+(err?" err":""); }
-
-async function doConnect(silent){
-  const host=$("host").value.trim(), pass=$("pass").value;
-  if(!host){ setConnMsg("Podaj adres serwera OBS.",true); return; }
-  clearTimeout(retry);
-  setConnMsg("Łączę…");
-  try{
-    await obs.connect(host,pass);
-  }catch(e){
-    setConnMsg(e.message,true);
-    if(silent) retry=setTimeout(()=>doConnect(true),4000);
-    return;
-  }
-  store.set("host",host); store.set("pass",pass);
-  connected=true; wantConnected=true; keepAwake(); $("dot").classList.add("ok"); $("connect").hidden=true; setConnMsg("");
-  try{ await loadAll(); }catch(e){ toast(e.message); }
-  poll(); timers.push(setInterval(poll,2000));
-}
-
-async function discover(){
-  $("scan-msg").textContent="Szukam OBS w sieci…"; $("found").replaceChildren();
-  try{
-    const r=await fetch("/api/discover"); const list=await r.json();
-    $("scan-msg").textContent=list.length?"Znaleziono OBS:":"Nie znaleziono OBS. Wpisz adres ręcznie i sprawdź, czy serwer WebSocket jest włączony (Narzędzia → Ustawienia serwera WebSocket).";
-    list.forEach(ip=>{
-      const c=document.createElement("button"); c.className="chip"; c.textContent=ip;
-      c.onclick=()=>{ $("host").value=ip; document.querySelectorAll(".chip").forEach(x=>x.classList.remove("sel")); c.classList.add("sel"); };
-      $("found").append(c);
-    });
-    return list;
-  }catch{ $("scan-msg").textContent="Skanowanie nie powiodło się. Wpisz adres ręcznie."; return []; }
-}
-
-$("go").onclick=()=>doConnect(false);
-$("rescan").onclick=discover;
-$("pass").addEventListener("keydown",e=>{ if(e.key==="Enter")doConnect(false); });
-$("b-reconf").onclick=()=>{ wantConnected=false; clearTimeout(retry); obs.close(); connected=false; timers.forEach(clearInterval); timers=[]; $("dot").classList.remove("ok"); $("connect").hidden=false; discover(); };
-
-/* ---------- Twitch chat (anonymous, read-only) ---------- */
-let irc=null;
-function chatLine(user,color,text,sys){
-  const log=$("chatlog"), el=document.createElement("div");
-  const stick=log.scrollTop+log.clientHeight>=log.scrollHeight-40;
-  if(sys){ el.className="sys"; el.textContent=text; }
-  else{
-    el.className="m"; const b=document.createElement("b"); b.textContent=user; if(color)b.style.color=color;
-    el.append(b,document.createTextNode(text));
-  }
-  log.append(el);
-  while(log.children.length>300)log.firstChild.remove();
-  if(stick)log.scrollTop=log.scrollHeight;
-}
-let chatTries=0, chatTimer=null;
-function joinChat(channel,retry){
-  channel=channel.trim().replace(/^#/,"").replace(/[?#].*$/,"").replace(/\/+$/,"").split("/").pop().replace(/^[@#]/,"").toLowerCase();
-  if(!/^[a-z0-9_]{3,25}$/.test(channel)){ chatLine("","","Nieprawidłowa nazwa kanału. Wpisz samą nazwę, np. mr3xw.",true); return; }
-  $("chan").value=channel;
-  store.set("chan",channel);
-  clearTimeout(chatTimer);
-  if(irc){ irc.onclose=null; irc.onerror=null; irc.close(); }
-  if(!retry){ chatTries=0; chatLine("","","Łączę z #"+channel+"…",true); }
-  let joined=false;
-  const ws=irc=new WebSocket("wss://irc-ws.chat.twitch.tv:443");
-  ws.onopen=()=>{ ws.send("CAP REQ :twitch.tv/tags"); ws.send("PASS SCHMOOPIISFAKE"); ws.send("NICK justinfan"+Math.floor(Math.random()*90000+10000)); ws.send("JOIN #"+channel); };
-  ws.onmessage=ev=>{
-    ev.data.split("\r\n").filter(Boolean).forEach(line=>{
-      if(line.startsWith("PING")){ ws.send("PONG :tmi.twitch.tv"); return; }
-      if(!joined&&(/ 366 /.test(line)||/ JOIN #/.test(line))){ joined=true; chatTries=0; chatLine("","","Połączono z #"+channel,true); return; }
-      const n=line.match(/NOTICE \S+ :(.*)$/);
-      if(n){ chatLine("","","Twitch: "+n[1],true); return; }
-      const m=line.match(/^@(\S+) :([^!]+)![^ ]+ PRIVMSG #\S+ :(.*)$/);
-      if(!m)return;
-      const tags=Object.fromEntries(m[1].split(";").map(t=>t.split("=")));
-      chatLine(tags["display-name"]||m[2],tags.color,m[3]);
-    });
-  };
-  setTimeout(()=>{ if(irc===ws&&!joined)chatLine("","","Brak odpowiedzi od Twitcha. Sprawdź nazwę kanału i połączenie z internetem.",true); },10000);
-  ws.onclose=e=>{
-    if(irc!==ws)return;
-    chatTries++;
-    if(chatTries>5){ chatLine("","","Nie udało się połączyć z Twitchem (kod "+e.code+"). Sprawdź internet, blokery reklam/VPN i nazwę kanału, potem kliknij Połącz.",true); return; }
-    const wait=Math.min(30,5*chatTries);
-    chatLine("","","Rozłączono (kod "+e.code+"). Ponawiam za "+wait+" s…",true);
-    chatTimer=setTimeout(()=>{ if(irc===ws)joinChat(channel,true); },wait*1000);
-  };
-}
-$("chan-go").onclick=()=>joinChat($("chan").value);
-$("chan").addEventListener("keydown",e=>{ if(e.key==="Enter")joinChat($("chan").value); });
-
-/* ---------- mobile: wibracja, wybudzanie, powrót z tła ---------- */
-document.addEventListener("click",e=>{
-  if(navigator.vibrate&&e.target.closest("button.scene,button.big,button.mute"))navigator.vibrate(12);
-});
-let wakeLock=null;
-async function keepAwake(){
-  // działa tylko w bezpiecznym kontekście (https lub localhost); w LAN po http brak API i nic się nie dzieje
-  try{ if("wakeLock" in navigator&&document.visibilityState==="visible")wakeLock=await navigator.wakeLock.request("screen"); }catch{}
-}
-document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState!=="visible")return;
-  // przeglądarki mobilne zrywają WebSockety w tle, więc po powrocie łączymy ponownie
-  if(wantConnected){
-    if(connected&&obs.ws&&obs.ws.readyState===1){ loadAll().catch(()=>{}); poll(); keepAwake(); }
-    else{ clearTimeout(retry); doConnect(true); }
-  }
-  if(irc&&irc.readyState>1&&$("chan").value)joinChat($("chan").value);
-});
-
-/* ---------- start ---------- */
-(async function init(){
-  try{
-    Object.assign(CFG,await (await fetch("/api/config")).json());
-    $("rec-dir").textContent=CFG.recordDir?"Nagrania trafiają do: "+CFG.recordDir:"Katalog nagrań: ustawienie z OBS";
-  }catch{}
-  $("host").value=store.get("host"); $("pass").value=store.get("pass"); $("chan").value=store.get("chan");
-  if(!$("chan").value&&CFG.twitchChannel)$("chan").value=CFG.twitchChannel;
-  if($("chan").value)joinChat($("chan").value);
-  const found=await discover();
-  if(!$("host").value && found.length) $("host").value=found[0];
-  if($("host").value) doConnect(false);
-})();
-</script>
+<script type="module" src="/static/js/app.js"></script>
 </body>
 </html>

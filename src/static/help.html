@@ -48,6 +48,7 @@ td:first-child{white-space:nowrap}
     <li><a href="#obs">Włączenie WebSocket w OBS</a></li>
     <li><a href="#start">Uruchomienie serwera</a></li>
     <li><a href="#zmienne">Zmienne konfiguracyjne</a></li>
+    <li><a href="#ustawienia">Ustawienia w aplikacji</a></li>
     <li><a href="#nagrania">Katalog nagrań</a></li>
     <li><a href="#telefon">Używanie z telefonu</a></li>
     <li><a href="#czat">Czat Twitch</a></li>
@@ -60,7 +61,8 @@ td:first-child{white-space:nowrap}
   <li>OBS Studio w wersji 28 lub nowszej (serwer WebSocket jest w nim wbudowany).</li>
   <li>Python 3.10+ z pakietami <code>fastapi</code> i <code>uvicorn</code>.</li>
 </ul>
-<pre><code>pip install fastapi uvicorn</code></pre>
+<pre><code>pip install -r requirements.txt</code></pre>
+<p>Pakiet <code>qrcode</code> jest opcjonalny: gdy jest zainstalowany, w konsoli pojawia się kod QR z adresem do otwarcia na telefonie.</p>
 
 <h2 id="obs">2. Włączenie WebSocket w OBS</h2>
 <ol>
@@ -73,14 +75,14 @@ td:first-child{white-space:nowrap}
 <p>Hasło wpisujesz tylko w oknie pada i nie trafia do żadnego pliku konfiguracyjnego.</p>
 
 <h2 id="start">3. Uruchomienie serwera</h2>
-<p>Pliki <code>index.html</code> i <code>help.html</code> muszą leżeć w katalogu wskazanym przez <code>STATIC_DIR</code>. Potem:</p>
-<pre><code>python server.py</code></pre>
+<p>Pliki Pliki strony (<code>index.html</code>, <code>help.html</code>, katalogi <code>css/</code> i <code>js/</code>) leżą w katalogu <code>static/</code> obok <code>main.py</code> (zmienisz to zmienną <code>STATIC_DIR</code>). Uruchom:</p>
+<pre><code>python main.py</code></pre>
 <p>W konsoli zobaczysz adres do wpisania w przeglądarce, np. <code>http://localhost:8080</code>. Strona sama wyszuka OBS w sieci lokalnej. Jeśli go nie znajdzie, wpisz adres ręcznie.</p>
 
 <h2 id="zmienne">4. Zmienne konfiguracyjne</h2>
-<p>Znajdują się na górze pliku <code>server.py</code>. Każdą można też nadpisać zmienną środowiskową o tej samej nazwie, bez edycji pliku:</p>
-<pre><code>RECORD_DIR=/mnt/nagrania python server.py</code></pre>
-<p>Kolumna „Aktualnie" pokazuje wartości, z którymi działa teraz serwer.</p>
+<p>Zmienne środowiskowe ustawiasz przy uruchomieniu, bez edycji plików:</p>
+<pre><code>WEB_PORT=9000 python main.py</code></pre>
+<p><code>STATIC_DIR</code>, <code>WEB_PORT</code>, <code>CONFIG_PATH</code> i <code>SCAN_SUBNETS</code> działają tylko przy starcie serwera. Pozostałe (<code>OBS_PORT</code>, <code>RECORD_DIR</code>, <code>RECORD_FILENAME_FORMAT</code>, <code>OBS_ON_THIS_PC</code>, <code>TWITCH_CHANNEL</code>) to wartości domyślne używane, dopóki nie zapiszesz ustawień w aplikacji. Zapisane ustawienia (plik <code>config.json</code>) mają pierwszeństwo. Kolumna „Aktualnie" pokazuje wartości, z którymi pracuje teraz serwer.</p>
 <div class="wide">
 <table>
   <tr><th>Zmienna</th><th>Znaczenie</th><th>Aktualnie</th></tr>
@@ -91,11 +93,24 @@ td:first-child{white-space:nowrap}
   <tr><td><code>RECORD_FILENAME_FORMAT</code></td><td>Schemat nazwy pliku w składni OBS. Pusty tekst oznacza brak zmiany.</td><td class="cur" data-k="recordFilenameFormat">–</td></tr>
   <tr><td><code>OBS_ON_THIS_PC</code></td><td><code>1</code>, gdy serwer działa na tym samym komputerze co OBS. Wtedy brakujący katalog nagrań jest tworzony przy starcie.</td><td class="cur" data-k="obsOnThisPc">–</td></tr>
   <tr><td><code>TWITCH_CHANNEL</code></td><td>Kanał otwierany domyślnie w czacie.</td><td class="cur" data-k="twitchChannel">–</td></tr>
+  <tr><td><code>CONFIG_PATH</code></td><td>Plik z zapisanymi ustawieniami (domyślnie <code>config.json</code> obok <code>main.py</code>). Nie trzymaj go w <code>STATIC_DIR</code>.</td><td class="cur">–</td></tr>
+  <tr><td><code>SCAN_SUBNETS</code></td><td>Podsieci do szukania OBS, np. <code>192.168.1.0/24,10.0.0.0/24</code>. Puste = podsieć /24 tego komputera.</td><td class="cur">–</td></tr>
 </table>
 </div>
-<p>Po zmianie wartości zrestartuj serwer i odśwież stronę.</p>
 
-<h2 id="nagrania">5. Katalog nagrań</h2>
+
+<h2 id="ustawienia">5. Ustawienia w aplikacji</h2>
+<p>Przycisk <strong>Ustawienia</strong> w nagłówku otwiera panel, w którym zmienisz bez restartu:</p>
+<ul>
+  <li>port OBS, katalog i schemat nazwy nagrań, domyślny kanał czatu,</li>
+  <li>sceny: tekst na przycisku, kolor, widoczność i kolejność (strzałki ▲ ▼),</li>
+  <li>urządzenia audio: które pokazywać i w jakiej kolejności.</li>
+</ul>
+<p>Zapis trafia do pliku <code>config.json</code> na serwerze, więc układ jest wspólny dla wszystkich urządzeń (komputer, telefon, tablet). Sceny i urządzenia audio można edytować, gdy pad jest połączony z OBS. Dodaj <code>config.json</code> do <code>.gitignore</code>, jeśli nie chcesz go wersjonować.</p>
+<p><strong>Bezpieczeństwo przycisków.</strong> Start i koniec streamu oraz koniec nagrywania wymagają przytrzymania przycisku (ok. 1 s, widać pasek postępu), żeby nie włączyć ich przypadkowym dotknięciem. Start nagrywania działa od razu po dotknięciu.</p>
+<p><strong>Alarmy.</strong> Pad wibruje i pokazuje komunikat, gdy stream traci połączenie z serwerem platformy lub gdy podczas nagrywania zostaje mniej niż 5 GB wolnego miejsca (wartość „Dysk" w nagłówku robi się pomarańczowa).</p>
+
+<h2 id="nagrania">6. Katalog nagrań</h2>
 <p>Przy każdym starcie nagrywania pad najpierw wysyła do OBS katalog z <code>RECORD_DIR</code> i schemat nazwy z <code>RECORD_FILENAME_FORMAT</code>, a dopiero potem włącza nagrywanie. Dzięki temu nagrania zawsze trafiają tam, gdzie wskazuje konfiguracja, niezależnie od ustawień w OBS.</p>
 <ul>
   <li>Ścieżka dotyczy komputera, na którym działa <strong>OBS</strong>, a nie telefonu ani przeglądarki.</li>
@@ -106,24 +121,27 @@ td:first-child{white-space:nowrap}
 </ul>
 <div class="note">Jeśli serwer działa na innym komputerze niż OBS, ustaw <code>OBS_ON_THIS_PC=0</code> i upewnij się, że katalog istnieje na komputerze z OBS.</div>
 
-<h2 id="telefon">6. Używanie z telefonu</h2>
+<h2 id="telefon">7. Używanie z telefonu</h2>
 <ol>
   <li>Telefon i komputer muszą być w tej samej sieci Wi-Fi.</li>
   <li>Otwórz w telefonie adres „w sieci" z konsoli, np. <code>http://192.168.1.20:8080</code>.</li>
   <li>Jeśli strona się nie ładuje, zezwól w zaporze na porty <code>WEB_PORT</code> (domyślnie 8080) i <code>OBS_PORT</code> (domyślnie 4455).</li>
 </ol>
-<p>Telefon łączy się z OBS bezpośrednio, więc OBS musi być osiągalny z sieci, a nie tylko z <code>localhost</code>.</p>
+<p>Telefon łączy się z OBS bezpośrednio, więc OBS musi być osiągalny z sieci, a nie tylko z <code>localhost</code>. Na telefonie widoki przełączasz dolnym paskiem (Pad, Dźwięk, Czat).</p>
+<p>Po powrocie z innej aplikacji pad sam łączy się ponownie. Blokada wygaszania ekranu działa tylko przy połączeniu <code>https://</code> lub <code>localhost</code>; w sieci domowej po <code>http://</code> ekran może się wygaszać, co ustawisz w telefonie.</p>
 
-<h2 id="czat">7. Czat Twitch</h2>
-<p>W prawym panelu wpisz nazwę kanału (samą nazwę z adresu <code>twitch.tv/nazwa</code>) i kliknij „Połącz". Czat działa tylko do odczytu i nie wymaga logowania. Możesz też ustawić kanał domyślny w <code>TWITCH_CHANNEL</code>. Urządzenie z otwartym padem potrzebuje dostępu do internetu.</p>
+<h2 id="czat">8. Czat Twitch</h2>
+<p>W prawym panelu wpisz nazwę kanału (samą nazwę z adresu <code>twitch.tv/nazwa</code>) i kliknij „Połącz". Czat działa tylko do odczytu i nie wymaga logowania. Wyświetla emotki Twitcha oraz wiadomości „/me". Możesz też ustawić kanał domyślny w <code>TWITCH_CHANNEL</code>. Urządzenie z otwartym padem potrzebuje dostępu do internetu.</p>
 
-<h2 id="problemy">8. Rozwiązywanie problemów</h2>
+<h2 id="problemy">9. Rozwiązywanie problemów</h2>
 <table>
   <tr><th>Objaw</th><th>Co sprawdzić</th></tr>
   <tr><td>„Nie znaleziono OBS"</td><td>Czy serwer WebSocket jest włączony i czy zapora przepuszcza port. Wpisz adres ręcznie, jeśli OBS jest w innej podsieci niż /24.</td></tr>
   <tr><td>„Złe hasło"</td><td>Hasło musi być takie samo jak w ustawieniach WebSocket w OBS.</td></tr>
   <tr><td>Nagrania w złym miejscu</td><td>Sprawdź <code>RECORD_DIR</code> i czy przed startem nie pojawił się komunikat o błędzie.</td></tr>
   <tr><td>Brak urządzeń w sekcji Dźwięk</td><td>Pad pokazuje urządzenia globalne z Ustawienia → Dźwięk. Źródła dodane tylko do scen nie są wyświetlane.</td></tr>
+  <tr><td>Baner „Ponawiam za…" u góry</td><td>Pad stracił połączenie z OBS i próbuje je odnowić z rosnącym odstępem. Sprawdź, czy OBS działa; „Zmień serwer" pozwala wskazać inny adres. Przy błędnym lub brakującym haśle pad nie ponawia prób, tylko pokazuje okno połączenia.</td></tr>
+  <tr><td>Nie zapisuje się układ</td><td>Sprawdź prawa zapisu do pliku <code>config.json</code> (lub ścieżki z <code>CONFIG_PATH</code>); komunikat błędu pojawia się na dole panelu ustawień.</td></tr>
   <tr><td>Pusty czat</td><td>Kanał może być offline albo nikt nie pisze. Sprawdź pisownię nazwy kanału.</td></tr>
 </table>
 </div>

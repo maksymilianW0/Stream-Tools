@@ -3,13 +3,13 @@ VENV := $(PROJECT_DIR)/.venv
 GLOBAL_PYTHON := python
 PYTHON := $(VENV)/bin/python
 
-SERVER_START_FILE := $(PROJECT_DIR)/src/server/main.py
+SERVER_START_FILE := $(PROJECT_DIR)/src/main.py
 
-.PHONY: setup
+.PHONY: setup run
 
 setup:
 	$(GLOBAL_PYTHON) -m venv $(VENV)
 	$(PYTHON) -m pip install -r $(PROJECT_DIR)/requirements.txt
 
-dev:
+run:
 	$(PYTHON) $(SERVER_START_FILE)
