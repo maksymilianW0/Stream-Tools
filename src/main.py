@@ -14,6 +14,14 @@ from fastapi.staticfiles import StaticFiles
 
 import padconfig
 
+
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+
 # =====================================================================
 # Ustawienia uruchomieniowe (zmienne środowiskowe, wymagają restartu).
 # Pozostałe ustawienia (port OBS, katalog nagrań, czat, układ przycisków)
