@@ -1,9 +1,11 @@
-"""Stream Pad server — FastAPI + wykrywanie OBS WebSocket + zapis konfiguracji."""
+"""Stream Pad server — FastAPI + wykrywanie OBS WebSocket + zapis konfiguracji i akcji."""
 
 import asyncio
 import ipaddress
+import json
 import os
 import socket
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -14,12 +16,9 @@ from fastapi.staticfiles import StaticFiles
 
 import padconfig
 
-
-
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 
 # =====================================================================
@@ -38,6 +37,10 @@ STATIC_DIR = Path(os.environ.get("STATIC_DIR", HERE / "static")).resolve()
 # Plik z zapisaną konfiguracją. Trzymaj go poza STATIC_DIR (jest tam serwowany!).
 CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", HERE / "config.json"))
 
+# Plik z akcjami (regułami „gdy → wtedy") ustawianymi w oknie „Akcje".
+# Wspólny dla wszystkich urządzeń. Również poza STATIC_DIR.
+ACTIONS_PATH = Path(os.environ.get("ACTIONS_PATH", HERE / "actions.json"))
+
 # Port serwera Stream Pad (strona w przeglądarce).
 WEB_PORT = int(os.environ.get("WEB_PORT", 8080))
 
@@ -49,6 +52,16 @@ MAX_SCAN_HOSTS = 1024
 # =====================================================================
 
 store = padconfig.Store(CONFIG_PATH)
+
+MAX_RULES = 200
+MAX_ACTIONS_PER_RULE = 20
+ACTIONS_LOCK = threading.Lock()
+TRIGGER_TYPES = {
+    "scene_enter", "scene_leave",
+    "stream_start", "stream_stop",
+    "record_start", "record_stop",
+}
+ACTION_TYPES = {"mute", "unmute", "volume", "scene", "rec_start", "rec_stop"}
 
 
 def local_ip() -> str:
@@ -126,6 +139,55 @@ def print_qr(url: str) -> None:
         pass
 
 
+# ---------------------------------------------------------------------
+# Akcje (reguły)
+# ---------------------------------------------------------------------
+
+def validate_rules(rules: list) -> list[str]:
+    """Zwraca listę błędów (pusta = reguły poprawne)."""
+    errors: list[str] = []
+    if len(rules) > MAX_RULES:
+        return [f"Za dużo reguł (maks. {MAX_RULES})"]
+    for i, rule in enumerate(rules, 1):
+        where = f"Reguła {i}: "
+        if not isinstance(rule, dict) or not isinstance(rule.get("id"), str):
+            errors.append(where + "brak identyfikatora")
+            continue
+        trigger = rule.get("trigger")
+        if not isinstance(trigger, dict) or trigger.get("type") not in TRIGGER_TYPES:
+            errors.append(where + "nieznane zdarzenie")
+        elif trigger["type"].startswith("scene") and not isinstance(trigger.get("scene"), str):
+            errors.append(where + "brak sceny")
+        actions = rule.get("actions")
+        if not isinstance(actions, list) or not actions:
+            errors.append(where + "brak akcji")
+            continue
+        if len(actions) > MAX_ACTIONS_PER_RULE:
+            errors.append(where + f"za dużo akcji (maks. {MAX_ACTIONS_PER_RULE})")
+            continue
+        for action in actions:
+            if not isinstance(action, dict) or action.get("type") not in ACTION_TYPES:
+                errors.append(where + "nieznana akcja")
+                break
+    return errors
+
+
+def read_actions() -> list:
+    with ACTIONS_LOCK:
+        try:
+            data = json.loads(ACTIONS_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+    return data if isinstance(data, list) else []
+
+
+def write_actions(rules: list) -> None:
+    with ACTIONS_LOCK:
+        tmp = ACTIONS_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(rules, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(ACTIONS_PATH)  # zapis atomowy
+
+
 app = FastAPI(title="Stream Pad")
 
 
@@ -155,9 +217,36 @@ async def put_config(payload: dict = Body(...)) -> dict:
     return {**data, "webPort": WEB_PORT}
 
 
+@app.get("/api/actions")
+async def get_actions() -> list:
+    return await asyncio.to_thread(read_actions)
+
+
+@app.put("/api/actions")
+async def put_actions(rules: list = Body(...)) -> dict:
+    errors = validate_rules(rules)
+    if errors:
+        raise HTTPException(status_code=422, detail=errors)
+    try:
+        await asyncio.to_thread(write_actions, rules)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500, detail=[f"Nie udało się zapisać pliku akcji: {exc}"]
+        )
+    return {"saved": len(rules)}
+
+
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(
+        STATIC_DIR / "images" / "favicon.ico",
+        media_type="image/x-icon"
+    )
 
 
 @app.get("/help")
