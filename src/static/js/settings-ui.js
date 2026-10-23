@@ -1,6 +1,7 @@
 import { $, h } from "./util.js";
 import { CFG, saveConfig, orderScenes } from "./config.js";
 import { parseChannel } from "./chat.js";
+import { TRIGGERS, ACTION_LABELS, isSceneTrigger, needsTarget, describeTrigger, describeAction } from "./actions.js";
 
 const COLORS=["#35e0c0","#ff4560","#ffb547","#5aa9ff","#a78bfa","#f472b6"];
 
@@ -24,7 +25,8 @@ export function initSettings({getContext,onSaved,onChangeServer}){
     });
     return {
       obsPort:String(CFG.obsPort), recordDir:CFG.recordDir, recordFilenameFormat:CFG.recordFilenameFormat,
-      obsOnThisPc:CFG.obsOnThisPc, twitchChannel:CFG.twitchChannel, scenes, audio:audioList(CFG.pad.audioInputs)
+      obsOnThisPc:CFG.obsOnThisPc, twitchChannel:CFG.twitchChannel, scenes, audio:audioList(CFG.pad.audioInputs),
+      actions:JSON.parse(JSON.stringify(CFG.pad.actions||[])), rule:blankRule()
     };
   }
   function audioList(selected){
@@ -75,6 +77,81 @@ export function initSettings({getContext,onSaved,onChangeServer}){
     });
   }
 
+  /* ---- akcje ---- */
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const newAct=()=>({type:"mute",target:"",value:100});
+  const blankRule=()=>({trigger:"scene_enter",scene:"",acts:[newAct()]});
+  const targetsFor=type=>type==="scene"?ctx.sceneNames:(ctx.audio?ctx.audio.all:[]);
+
+  function select(options,value,onchange,label){
+    const s=h("select",{"aria-label":label,onchange:()=>onchange(s.value)},
+      ...options.map(([v,t])=>h("option",{value:v,selected:v===value},t)));
+    return s;
+  }
+
+  function savedRules(){
+    if(!draft.actions.length) return [h("div",{class:"msg"},"Brak reguł. Dodaj pierwszą poniżej.")];
+    return draft.actions.map(r=>{
+      const on=h("input",{type:"checkbox",checked:r.enabled,onchange:()=>{ r.enabled=on.checked; render(); }});
+      return h("div",{class:"rulecard"+(r.enabled?"":" off")},
+        h("div",{class:"rulewhen"},"Gdy: "+describeTrigger(r.trigger)),
+        h("ul",{},...r.actions.map(a=>h("li",{},describeAction(a)))),
+        h("div",{class:"ruletools"},
+          h("label",{class:"check"},on,"Włączona"),
+          h("button",{type:"button",class:"btn ghost",onclick:()=>{ draft.actions=draft.actions.filter(x=>x!==r); render(); }},"Usuń")));
+    });
+  }
+
+  function addRule(){
+    const r=draft.rule;
+    if(isSceneTrigger(r.trigger)&&!r.scene){ say("Wybierz scenę.",true); return; }
+    if(r.acts.some(a=>needsTarget(a.type)&&!a.target)){ say("Wybierz cel każdej akcji.",true); return; }
+    draft.actions.push({
+      id:uid(), enabled:true,
+      trigger:isSceneTrigger(r.trigger)?{type:r.trigger,scene:r.scene}:{type:r.trigger},
+      actions:r.acts.map(a=>{
+        const o={type:a.type};
+        if(needsTarget(a.type)) o.target=a.target;
+        if(a.type==="volume") o.value=a.value;
+        return o;
+      })
+    });
+    draft.rule=blankRule(); render();
+    say("Reguła dodana. Zapisz zmiany, aby ją zastosować.");
+  }
+
+  function newRuleForm(){
+    const r=draft.rule, scenes=ctx.sceneNames;
+    if(isSceneTrigger(r.trigger)&&!scenes.includes(r.scene)) r.scene=scenes[0]||"";
+    for(const a of r.acts){
+      if(needsTarget(a.type)){ const list=targetsFor(a.type); if(!list.includes(a.target)) a.target=list[0]||""; }
+    }
+    const rows=r.acts.map((a,i)=>{
+      const parts=[select(Object.entries(ACTION_LABELS),a.type,v=>{ a.type=v; a.target=""; render(); },"Rodzaj akcji")];
+      if(needsTarget(a.type)){
+        parts.push(select(targetsFor(a.type).map(n=>[n,n]),a.target,v=>{ a.target=v; },a.type==="scene"?"Scena docelowa":"Źródło dźwięku"));
+      }
+      if(a.type==="volume"){
+        const pct=h("span",{class:"pct"},a.value+"%");
+        const rg=h("input",{type:"range",min:0,max:100,value:a.value,"aria-label":"Głośność",oninput:()=>{ a.value=Number(rg.value); pct.textContent=a.value+"%"; }});
+        parts.push(h("div",{class:"volrow"},rg,pct));
+      }
+      return h("div",{class:"actrow"},h("div",{class:"rowmain"},...parts),
+        h("button",{type:"button",class:"x","aria-label":"Usuń akcję",disabled:r.acts.length===1,onclick:()=>{ r.acts.splice(i,1); render(); }},"✕"));
+    });
+    return [
+      h("h3",{class:"sub"},"Nowa reguła"),
+      h("div",{class:"field"},h("label",{},"Gdy"),
+        select(Object.entries(TRIGGERS),r.trigger,v=>{ r.trigger=v; render(); },"Zdarzenie")),
+      isSceneTrigger(r.trigger)&&h("div",{class:"field"},h("label",{},"Scena"),
+        select(scenes.map(n=>[n,n]),r.scene,v=>{ r.scene=v; },"Scena")),
+      h("div",{class:"field"},h("label",{},"Wtedy"),...rows),
+      h("div",{class:"btnrow"},
+        h("button",{type:"button",class:"btn ghost",onclick:()=>{ r.acts.push(newAct()); render(); }},"+ Dodaj akcję"),
+        h("button",{type:"button",class:"btn",onclick:addRule},"Dodaj regułę"))
+    ];
+  }
+
   function resetPad(){
     draft.scenes=ctx.sceneNames.map(name=>({name,label:"",color:"",hidden:false}));
     draft.audio=audioList(null); audioMode="default"; render(); say("Układ przywrócony. Zapisz zmiany, aby go zastosować.");
@@ -100,6 +177,12 @@ export function initSettings({getContext,onSaved,onChangeServer}){
         offline||!draft.audio
           ? h("div",{class:"msg"},"Połącz się z OBS, aby wybrać urządzenia audio.")
           : h("div",{class:"rows"},audioRows())),
+      h("section",{},h("h3",{},"Akcje"),
+        h("div",{class:"hintline"},"Reguła wykonuje akcje automatycznie, gdy w OBS wydarzy się wybrane zdarzenie, np. po wybraniu sceny wycisza mikrofon. Działa, gdy pad jest otwarty na którymś urządzeniu."),
+        h("div",{class:"rows"},savedRules()),
+        ...(offline||!ctx.audio
+          ? [h("div",{class:"msg"},"Połącz się z OBS, aby dodawać reguły.")]
+          : newRuleForm())),
       !offline&&h("button",{type:"button",class:"btn ghost",onclick:resetPad},"Przywróć domyślny układ"));
     body.scrollTop=st;
   }
@@ -111,7 +194,7 @@ export function initSettings({getContext,onSaved,onChangeServer}){
     const port=Number(draft.obsPort);
     if(!Number.isInteger(port)||port<1||port>65535) throw new Error("Port OBS musi być liczbą od 1 do 65535.");
 
-    const pad={scenes:{...CFG.pad.scenes},sceneOrder:[...CFG.pad.sceneOrder],audioInputs:CFG.pad.audioInputs};
+    const pad={scenes:{...CFG.pad.scenes},sceneOrder:[...CFG.pad.sceneOrder],audioInputs:CFG.pad.audioInputs,actions:draft.actions};
     if(draft.scenes.length){
       const absent=CFG.pad.sceneOrder.filter(n=>!ctx.sceneNames.includes(n));
       pad.sceneOrder=[...draft.scenes.map(s=>s.name),...absent];

@@ -124,6 +124,23 @@ input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--on)}
 .sw.none{background:var(--ink)}
 .sw.sel{border-color:var(--text);box-shadow:0 0 0 2px var(--ink) inset}
 
+/* ---- akcje (w ustawieniach) ---- */
+select{min-width:0;width:100%;min-height:46px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--ink);color:var(--text);font:inherit;font-size:16px}
+.sheet-body h3.sub{font-size:.85rem;color:var(--dim);margin-top:4px}
+.rulecard{display:flex;flex-direction:column;gap:8px;background:var(--pad);border:1px solid var(--line);border-radius:12px;padding:12px}
+.rulecard.off{opacity:.55}
+.rulewhen{font-weight:600}
+.rulecard ul{margin:0 0 0 18px;padding:0;color:var(--dim);font-size:.9rem}
+.ruletools{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.actrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:var(--pad);border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}
+.volrow{display:flex;gap:10px;align-items:center}
+.pct{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);font-size:.85rem}
+.x{min-width:46px;min-height:46px;border-radius:10px;background:var(--ink);border:1px solid var(--line);color:var(--dim);font-size:1.1rem}
+.x:disabled{opacity:.3}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btnrow .btn{flex:1 1 140px}
+
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));max-width:90vw;text-align:center;transform:translateX(-50%);
   background:var(--pad-hi);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
 #toast.show{opacity:1}

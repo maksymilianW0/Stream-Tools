@@ -107,6 +107,15 @@ td:first-child{white-space:nowrap}
   <li>urządzenia audio: które pokazywać i w jakiej kolejności.</li>
 </ul>
 <p>Zapis trafia do pliku <code>config.json</code> na serwerze, więc układ jest wspólny dla wszystkich urządzeń (komputer, telefon, tablet). Sceny i urządzenia audio można edytować, gdy pad jest połączony z OBS. Dodaj <code>config.json</code> do <code>.gitignore</code>, jeśli nie chcesz go wersjonować.</p>
+<p><strong>Akcje.</strong> W sekcji „Akcje" panelu ustawień tworzysz reguły typu „gdy zdarzy się X, zrób Y", np. po wybraniu sceny „Rozmowa" włącz dźwięk mikrofonu, a po wybraniu sceny „Przerwa" go wycisz.</p>
+<ul>
+  <li><strong>Zdarzenia:</strong> wybrano scenę, opuszczono scenę, rozpoczęto lub zakończono stream, rozpoczęto lub zakończono nagrywanie.</li>
+  <li><strong>Akcje:</strong> wycisz źródło, włącz dźwięk źródła, ustaw głośność, przełącz scenę, rozpocznij nagrywanie, zakończ nagrywanie. Jedna reguła może mieć kilka akcji, wykonywanych po kolei.</li>
+  <li>Reguły zapisują się w <code>config.json</code> razem z resztą ustawień (przycisk „Zapisz zmiany") i są wspólne dla wszystkich urządzeń. Można je włączać, wyłączać i usuwać; edycji istniejącej reguły nie ma, trzeba ją usunąć i dodać ponownie.</li>
+  <li>Reguły wykonuje przeglądarka, więc działają tylko wtedy, gdy pad jest otwarty i połączony z OBS. Przy kilku otwartych urządzeniach każde wykona regułę, dlatego nie ma akcji „przełącz wyciszenie" (dwa urządzenia wyciszyłyby i od razu włączyły mikrofon).</li>
+  <li>Reguły nie wykonują się przy samym połączeniu z OBS, tylko przy zmianie. Ta sama reguła nie odpali się częściej niż co 0,8 s, co chroni przed pętlą (scena A → B → A), ale takich reguł lepiej nie tworzyć.</li>
+  <li>Start i koniec streamu nie są dostępne jako akcje, bo wymagają świadomego przytrzymania przycisku.</li>
+</ul>
 <p><strong>Bezpieczeństwo przycisków.</strong> Start i koniec streamu oraz koniec nagrywania wymagają przytrzymania przycisku (ok. 1 s, widać pasek postępu), żeby nie włączyć ich przypadkowym dotknięciem. Start nagrywania działa od razu po dotknięciu.</p>
 <p><strong>Alarmy.</strong> Pad wibruje i pokazuje komunikat, gdy stream traci połączenie z serwerem platformy lub gdy podczas nagrywania zostaje mniej niż 5 GB wolnego miejsca (wartość „Dysk" w nagłówku robi się pomarańczowa).</p>
 

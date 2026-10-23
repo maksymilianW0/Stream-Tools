@@ -17,6 +17,16 @@ COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 MAX_SCENES = 200
 MAX_AUDIO = 50
 MAX_NAME = 200
+MAX_RULES = 100
+MAX_RULE_ACTIONS = 20
+RULE_TRIGGERS = {
+    "scene_enter", "scene_leave",
+    "stream_start", "stream_stop",
+    "record_start", "record_stop",
+}
+SCENE_TRIGGERS = {"scene_enter", "scene_leave"}
+RULE_ACTIONS = {"mute", "unmute", "volume", "scene", "rec_start", "rec_stop"}
+TARGET_ACTIONS = {"mute", "unmute", "volume", "scene"}
 
 
 class ValidationError(ValueError):
@@ -35,7 +45,7 @@ def env_defaults() -> dict[str, Any]:
         ),
         "obsOnThisPc": os.environ.get("OBS_ON_THIS_PC", "1") == "1",
         "twitchChannel": os.environ.get("TWITCH_CHANNEL", ""),
-        "pad": {"scenes": {}, "sceneOrder": [], "audioInputs": None},
+        "pad": {"scenes": {}, "sceneOrder": [], "audioInputs": None, "actions": []},
     }
 
 
@@ -62,6 +72,74 @@ def _names(value: Any, limit: int, label: str, errors: list[str]) -> list[str]:
             continue
         if item not in out:
             out.append(item)
+    return out
+
+
+def _rules(value: Any, errors: list[str]) -> list[dict[str, Any]]:
+    """Akcje: reguły „gdy zdarzenie → wykonaj akcje"."""
+    if value is None:
+        return []
+    if not isinstance(value, list) or len(value) > MAX_RULES:
+        errors.append(f"Akcje: oczekiwano listy (maks. {MAX_RULES} reguł).")
+        return []
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for n, rule in enumerate(value, 1):
+        label = f"Reguła {n}"
+        if not isinstance(rule, dict):
+            errors.append(f"{label}: nieprawidłowy format.")
+            continue
+        rid = rule.get("id")
+        if not isinstance(rid, str) or not 0 < len(rid) <= 64 or rid in seen:
+            errors.append(f"{label}: nieprawidłowy identyfikator.")
+            continue
+        seen.add(rid)
+        enabled = rule.get("enabled", True)
+        if not isinstance(enabled, bool):
+            errors.append(f"{label}: pole „włączona” musi być tak/nie.")
+            enabled = True
+
+        trig = rule.get("trigger")
+        if not isinstance(trig, dict) or trig.get("type") not in RULE_TRIGGERS:
+            errors.append(f"{label}: nieznane zdarzenie.")
+            continue
+        trigger: dict[str, Any] = {"type": trig["type"]}
+        if trig["type"] in SCENE_TRIGGERS:
+            scene = trig.get("scene")
+            if not isinstance(scene, str) or not 0 < len(scene) <= MAX_NAME:
+                errors.append(f"{label}: wybierz scenę.")
+                continue
+            trigger["scene"] = scene
+
+        acts_in = rule.get("actions")
+        if not isinstance(acts_in, list) or not 0 < len(acts_in) <= MAX_RULE_ACTIONS:
+            errors.append(f"{label}: wymagane 1–{MAX_RULE_ACTIONS} akcji.")
+            continue
+        acts: list[dict[str, Any]] = []
+        valid = True
+        for a in acts_in:
+            if not isinstance(a, dict) or a.get("type") not in RULE_ACTIONS:
+                errors.append(f"{label}: nieznana akcja.")
+                valid = False
+                break
+            act: dict[str, Any] = {"type": a["type"]}
+            if a["type"] in TARGET_ACTIONS:
+                target = a.get("target")
+                if not isinstance(target, str) or not 0 < len(target) <= MAX_NAME:
+                    errors.append(f"{label}: akcja bez celu.")
+                    valid = False
+                    break
+                act["target"] = target
+            if a["type"] == "volume":
+                vol = a.get("value")
+                if isinstance(vol, bool) or not isinstance(vol, int) or not 0 <= vol <= 100:
+                    errors.append(f"{label}: głośność musi być liczbą od 0 do 100.")
+                    valid = False
+                    break
+                act["value"] = vol
+            acts.append(act)
+        if valid:
+            out.append({"id": rid, "enabled": enabled, "trigger": trigger, "actions": acts})
     return out
 
 
@@ -118,6 +196,7 @@ def validate(data: Any) -> dict[str, Any]:
 
     audio_in = pad.get("audioInputs")
     audio = None if audio_in is None else _names(audio_in, MAX_AUDIO, "Urządzenia audio", errors)
+    rules = _rules(pad.get("actions"), errors)
 
     if errors:
         raise ValidationError(errors)
@@ -127,7 +206,7 @@ def validate(data: Any) -> dict[str, Any]:
         "recordFilenameFormat": fmt,
         "obsOnThisPc": on_this_pc,
         "twitchChannel": channel,
-        "pad": {"scenes": scenes_out, "sceneOrder": order, "audioInputs": audio},
+        "pad": {"scenes": scenes_out, "sceneOrder": order, "audioInputs": audio, "actions": rules},
     }
 
 
