@@ -3,6 +3,7 @@ import { OBS } from "./obs.js";
 import { TwitchChat } from "./chat.js";
 import { CFG, loadConfig, orderScenes } from "./config.js";
 import { initSettings } from "./settings-ui.js";
+import { createActionRunner } from "./actions.js";
 
 const obs=new OBS();
 const chat=new TwitchChat($("chatlog"));
@@ -11,6 +12,8 @@ const state={
   scene:"", sceneNames:[], streaming:false, recording:false, streamReconnecting:false,
   streamTc:"", recTc:"", inputs:[], specialNames:[], allInputNames:[], audioCapable:new Map()
 };
+
+const actions=createActionRunner({obs,state,applyRecordSettings});
 
 /* ---------- połączenie z OBS ---------- */
 let wantConnected=false, connecting=false, attempt=0, retryTimer=null, pollTimer=null;
@@ -181,7 +184,10 @@ function startPolling(){ stopPolling(); poll(); pollTimer=setInterval(poll,2000)
 function stopPolling(){ clearInterval(pollTimer); pollTimer=null; }
 
 /* ---------- zdarzenia OBS ---------- */
-obs.on("CurrentProgramSceneChanged",d=>{ state.scene=d.sceneName; renderScenes(); });
+obs.on("CurrentProgramSceneChanged",d=>{
+  const prev=state.scene; state.scene=d.sceneName; renderScenes();
+  if(prev!==d.sceneName){ if(prev) actions.fire("scene_leave",prev); actions.fire("scene_enter",d.sceneName); }
+});
 obs.on("SceneListChanged",reloadSoon);
 obs.on("InputCreated",reloadSoon);
 obs.on("InputRemoved",reloadSoon);
@@ -193,8 +199,14 @@ obs.on("StreamStateChanged",d=>{
     state.streamReconnecting=false; state.streaming=d.outputActive; if(!d.outputActive) state.streamTc="";
   }
   renderOutputs();
+  if(d.outputState==="OBS_WEBSOCKET_OUTPUT_STARTED") actions.fire("stream_start");
+  if(d.outputState==="OBS_WEBSOCKET_OUTPUT_STOPPED") actions.fire("stream_stop");
 });
-obs.on("RecordStateChanged",d=>{ state.recording=d.outputActive; if(!d.outputActive) state.recTc=""; renderOutputs(); });
+obs.on("RecordStateChanged",d=>{
+  state.recording=d.outputActive; if(!d.outputActive) state.recTc=""; renderOutputs();
+  if(d.outputState==="OBS_WEBSOCKET_OUTPUT_STARTED") actions.fire("record_start");
+  if(d.outputState==="OBS_WEBSOCKET_OUTPUT_STOPPED") actions.fire("record_stop");
+});
 obs.on("InputMuteStateChanged",d=>{
   const i=state.inputs.find(x=>x.name===d.inputName);
   if(i&&i.btn){ i.muted=d.inputMuted; i.btn.className="mute"+(i.muted?" muted":""); i.btn.textContent=i.muted?"Wyciszony":"Włączony"; }
@@ -320,6 +332,8 @@ document.addEventListener("visibilitychange",()=>{
     else if(!connecting){ clearTimeout(retryTimer); attempt=0; connectNow({silent:true}); }
   }
   chat.revive();
+  // reguły i układ mogły zmienić się na innym urządzeniu
+  loadConfig().then(()=>{ $("rec-dir").textContent=recDirText(); renderScenes(); if(obs.isOpen) refreshAudio().catch(()=>{}); }).catch(()=>{});
 });
 
 /* ---------- start ---------- */

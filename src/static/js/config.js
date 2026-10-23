@@ -1,12 +1,12 @@
 /* Konfiguracja współdzielona z serwerem (GET/PUT /api/config → config.json). */
 export const CFG={
   obsPort:4455, recordDir:"", recordFilenameFormat:"", obsOnThisPc:true, twitchChannel:"", webPort:8080,
-  pad:{scenes:{},sceneOrder:[],audioInputs:null}
+  pad:{scenes:{},sceneOrder:[],audioInputs:null,actions:[]}
 };
 
 function apply(d){
   Object.assign(CFG,d);
-  CFG.pad={scenes:{},sceneOrder:[],audioInputs:null,...(d.pad||{})};
+  CFG.pad={scenes:{},sceneOrder:[],audioInputs:null,actions:[],...(d.pad||{})};
 }
 
 export async function loadConfig(){
