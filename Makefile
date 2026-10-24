@@ -29,9 +29,7 @@ $(VENV)/.setup_done: $(PROJECT_DIR)/requirements.txt
 	$(PYTHON) -m pip install pyinstaller
 	@touch $@
 
-# run: setup
-run: clean setup
-	clear
+run: setup
 	$(PYTHON) $(SERVER_START_FILE)
 
 build: setup
